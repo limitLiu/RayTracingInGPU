@@ -29,16 +29,16 @@ extension MetalView {
       _pipeline = try? device.makeRenderPipelineState(descriptor: renderPipelineDesc)
     }
   }
-  
+
   func render() {
     guard let device = device else { fatalError("Failed to find default device.") }
     let vertexData: [Float] = [
-      -1.0,  1.0,
+      -1.0, 1.0,
       -1.0, -1.0,
-       1.0,  1.0,
-       1.0,  1.0,
+      1.0, 1.0,
+      1.0, 1.0,
       -1.0, -1.0,
-       1.0, -1.0,
+      1.0, -1.0,
     ]
     let dataSize = vertexData.count * MemoryLayout<Float>.size
     let vertexBuffer = device.makeBuffer(bytes: vertexData, length: dataSize, options: [])

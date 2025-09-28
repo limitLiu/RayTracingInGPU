@@ -1,0 +1,16 @@
+disabled_rules:
+  - trailing_comma
+
+included:
+  - RayTracingInGPU
+
+line_length: 180
+
+identifier_name:
+  min_length: 1
+
+file_length:
+  warning: 550
+  error: 1000
+
+reporter: "xcode"
