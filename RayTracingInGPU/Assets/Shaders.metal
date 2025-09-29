@@ -42,6 +42,25 @@ struct Sphere {
   f32 radius;
 };
 
+f32 intersect_sphere(const Ray ray, const Sphere sphere) {
+  let v = ray.origin - sphere.center;
+  let a = dot(ray.direction, ray.direction);
+  let b = dot(v, ray.direction);
+  let c = dot(v, v) - sphere.radius * sphere.radius;
+  let d = b * b - a * c;
+  if (d < 0.) {
+    return -1.;
+  }
+  let sqrt_d = sqrt(d);
+  let recip_a = 1. / a;
+  let mb = -b;
+  let t = (mb - sqrt_d) * recip_a;
+  if (t > 0.) {
+    return t;
+  }
+  return (mb + sqrt_d) * recip_a;
+}
+
 vec3f sky_color(Ray ray) {
   let a = 0.5 * (normalize(ray.direction).y + 1);
   return (1 - a) * vec3f(1) + a * vec3f(0.5, 0.7, 1);
@@ -58,6 +77,10 @@ fragment vec4f fragmentFn(Vertex in [[stage_in]], constant Uniforms &uniforms [[
   var uv = in.position.xy / vec2f(f32(uniforms.width - 1), f32(uniforms.height - 1));
   uv = (2 * uv - vec2f(1)) * vec2f(aspect_ratio, -1);
   let direction = vec3f(uv, -focus_distance);
-  Ray ray = { origin, direction };
+  let ray = Ray { origin, direction };
+  let sphere = Sphere { .center = vec3f(0, 0, -1), .radius = 0.5 };
+  if (intersect_sphere(ray, sphere) > 0) {
+    return vec4f(1, 0.76, 0.03, 1);
+  }
   return vec4f(sky_color(ray), 1);
 }
