@@ -42,6 +42,12 @@ struct Sphere {
   f32 radius;
 };
 
+constant u32 OBJECT_COUNT = 2;
+constant Sphere scene[OBJECT_COUNT] = {
+  { .center = vec3f(0., 0., -1.), .radius = 0.5 },
+  { .center = vec3f(0., -100.5, -1.), .radius = 100. },
+};
+
 f32 intersect_sphere(const Ray ray, const Sphere sphere) {
   let v = ray.origin - sphere.center;
   let a = dot(ray.direction, ray.direction);
@@ -78,9 +84,17 @@ fragment vec4f fragmentFn(Vertex in [[stage_in]], constant Uniforms &uniforms [[
   uv = (2 * uv - vec2f(1)) * vec2f(aspect_ratio, -1);
   let direction = vec3f(uv, -focus_distance);
   let ray = Ray { origin, direction };
-  let sphere = Sphere { .center = vec3f(0, 0, -1), .radius = 0.5 };
-  if (intersect_sphere(ray, sphere) > 0) {
-    return vec4f(1, 0.76, 0.03, 1);
+  var closest_t = FLT_MAX;
+  for (u32 i = 0; i < OBJECT_COUNT; ++i) {
+    var t = intersect_sphere(ray, scene[i]);
+    if (t > 0. && t < closest_t) {
+      closest_t = t;
+    }
+  }
+  if (closest_t < FLT_MAX) {
+//    return vec4f(1, 0.76, 0.03, 1);
+//    return vec4f(1, 0.76, 0.03, 1) * saturate(1. - closest_t);
+    return vec4f(saturate(closest_t) * 0.5);
   }
   return vec4f(sky_color(ray), 1);
 }
