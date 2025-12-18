@@ -37,6 +37,15 @@ struct Ray {
   vec3f direction;
 };
 
+struct Intersection {
+  vec3f normal;
+  f32 t;
+};
+
+Intersection no_intersection() {
+  return Intersection { vec3f(0), -1. };
+}
+
 struct Sphere {
   vec3f center;
   f32 radius;
@@ -48,23 +57,31 @@ constant Sphere scene[OBJECT_COUNT] = {
   { .center = vec3f(0., -100.5, -1.), .radius = 100. },
 };
 
-f32 intersect_sphere(const Ray ray, const Sphere sphere) {
+vec3f point_on_ray(Ray ray, f32 t) {
+  return ray.origin + t * ray.direction;
+}
+
+Intersection intersect_sphere(const Ray ray, const Sphere sphere) {
   let v = ray.origin - sphere.center;
   let a = dot(ray.direction, ray.direction);
   let b = dot(v, ray.direction);
   let c = dot(v, v) - sphere.radius * sphere.radius;
   let d = b * b - a * c;
   if (d < 0.) {
-    return -1.;
+    return no_intersection();
   }
   let sqrt_d = sqrt(d);
   let recip_a = 1. / a;
   let mb = -b;
-  let t = (mb - sqrt_d) * recip_a;
-  if (t > 0.) {
-    return t;
+  let t1 = (mb - sqrt_d) * recip_a;
+  let t2 = (mb + sqrt_d) * recip_a;
+  let t = select(t2, t1, t1 > 0.);
+  if (t <= 0.) {
+    return no_intersection();
   }
-  return (mb + sqrt_d) * recip_a;
+  let p = point_on_ray(ray, t);
+  let N = (p - sphere.center) / sphere.radius;
+  return Intersection { N, t };
 }
 
 vec3f sky_color(Ray ray) {
@@ -84,17 +101,15 @@ fragment vec4f fragmentFn(Vertex in [[stage_in]], constant Uniforms &uniforms [[
   uv = (2 * uv - vec2f(1)) * vec2f(aspect_ratio, -1);
   let direction = vec3f(uv, -focus_distance);
   let ray = Ray { origin, direction };
-  var closest_t = FLT_MAX;
+  var closest_hit = Intersection { vec3f(0.), FLT_MAX };
   for (u32 i = 0; i < OBJECT_COUNT; ++i) {
-    var t = intersect_sphere(ray, scene[i]);
-    if (t > 0. && t < closest_t) {
-      closest_t = t;
+    var hit = intersect_sphere(ray, scene[i]);
+    if (hit.t > 0. && hit.t < closest_hit.t) {
+      closest_hit = hit;
     }
   }
-  if (closest_t < FLT_MAX) {
-//    return vec4f(1, 0.76, 0.03, 1);
-//    return vec4f(1, 0.76, 0.03, 1) * saturate(1. - closest_t);
-    return vec4f(saturate(closest_t) * 0.5);
+  if (closest_hit.t < FLT_MAX) {
+    return vec4f(0.5 * closest_hit.normal + vec3f(0.5), 1.);
   }
   return vec4f(sky_color(ray), 1);
 }
